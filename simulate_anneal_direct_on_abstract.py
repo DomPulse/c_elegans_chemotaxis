@@ -11,21 +11,21 @@ sim_length = 60
 sim_steps = int(sim_length/time_step)
 num_neurons = 6
 max_temp = 350
-temp_0 = 150
+temp_0 = 100
 temp = temp_0
 anneal_steps = 500000
 gamma = 0.1 #this essentially determines the strength of the turning speed
 v = 1/50 #this is the starting speed in cm/sec
 
-def init_syns(num_neurons, chemo_sens_idxs = [0], means = [1, 1, 1], stds = [1, 1, 1]):
-	temp_As = np.random.normal(means[0], stds[0], (num_neurons, num_neurons)) #matrix weight
-	temp_bs = np.random.normal(means[1], stds[1], num_neurons)  #b is for bias
+def init_syns(num_neurons, chemo_sens_idxs = [0], means = [1, 1, 1], stds = [1, 1, 1], frac_affected = 1):
+	temp_As = np.random.normal(means[0], stds[0], (num_neurons, num_neurons))*(np.random.rand(num_neurons, num_neurons) < frac_affected) #matrix weight
+	temp_bs = np.random.normal(means[1], stds[1], num_neurons)*(np.random.rand(num_neurons) < frac_affected)  #b is for bias
 	temp_cs = np.zeros(num_neurons) #selects which cells are sensitive to chemo-sense
-	temp_ks = np.random.normal(means[2], stds[2], num_neurons) #strength of chemo-sense
+	temp_ks = np.random.normal(means[2], stds[2], num_neurons)*(np.random.rand(num_neurons) < frac_affected) #strength of chemo-sense
 	for pre_syn_idx in range(num_neurons):
 		if pre_syn_idx in chemo_sens_idxs:
 			temp_cs[pre_syn_idx] = 1
-		temp_As[pre_syn_idx, pre_syn_idx] = -5*means[0] #leakage current
+		temp_As[pre_syn_idx, pre_syn_idx] = -5*means[0]*(np.random.rand() < frac_affected )#leakage current
 
 	return temp_As, temp_bs, temp_cs, temp_ks
 
@@ -69,7 +69,7 @@ def update_voltage(Vs, As, bs, cs, ks, C, dt):
 	return Vs, dV
 
 to_pass_means = np.asarray([0.5,  0.0,  0.1])
-to_pass_stds = [0.1, 0, 0.1]
+to_pass_stds = np.asarray([0.1, 0, 0.1])
 As, bs, cs, ks = init_syns(num_neurons, means = to_pass_means, stds = to_pass_stds)
 
 gradient, xs, ys = i_maka_da_gradient()
@@ -88,7 +88,7 @@ gradient, xs, ys = i_maka_da_gradient()
 
 for epoch in range(anneal_steps):
 	temp = temp_0*(anneal_steps - epoch)/anneal_steps
-	noise_As, noise_bs, noise_cs, noise_ks = init_syns(num_neurons, means = [np.random.normal(0, 0.1),  0,  0], stds = to_pass_stds)
+	noise_As, noise_bs, noise_cs, noise_ks = init_syns(num_neurons, means = [np.random.normal(0, 0.1),  0,  0], stds = to_pass_stds, frac_affected = 0.2)
 
 	test_As = As
 	test_bs = bs
@@ -127,7 +127,7 @@ for epoch in range(anneal_steps):
 		direct_C = gradient[j, i]
 		Vs, dVs = update_voltage(Vs, test_As, test_bs, cs, test_ks, direct_C, time_step)
 	
-	error = np.mean(np.square(goal - real)) + np.mean(np.abs(Vs))/100# + np.abs(ks[0])
+	error = np.mean(np.square(goal - real)) + 100*(np.mean(np.abs(Vs)) > 100)# + np.abs(ks[0])
 	#error = 1 - np.dot(goal, real)/(np.linalg.norm(goal)*np.linalg.norm(real)) + np.mean(np.abs(Vs))
 	#error = np.abs(goal[2] - real[2])
 	if accept(error, last_error, temp):
