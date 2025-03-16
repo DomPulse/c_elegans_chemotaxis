@@ -16,7 +16,7 @@ gamma = 0.1 #this essentially determines the strength of the turning speed
 all_vs = np.zeros((num_neurons, sim_steps))
 load = True
 save = False
-pick_idx = 17550
+pick_idx = 4443
 
 def init_syns(num_neurons, chemo_sens_idxs = [0], means = [1, 1, 1], stds = [1, 1, 1]):
 	temp_As = np.random.normal(means[0], stds[0], (num_neurons, num_neurons)) #matrix weight
@@ -119,6 +119,8 @@ gradient, xs, ys = i_maka_da_gradient()
 plt.figure()
 plt.imshow(gradient, extent = [-half_length, half_length, -half_length, half_length], cmap='Greys_r')
 
+print(ks)
+
 for s in range(sim_steps):
 	if s%25 == 0:
 		t = s/sim_steps
@@ -136,7 +138,8 @@ for s in range(sim_steps):
 
 	i = np.argmin(np.abs(pos_direct[0] - xs))
 	j = np.argmin(np.abs(pos_direct[1] - ys))
-	Vs, dVs = update_voltage(Vs, As, bs, cs, ks, C, time_step)
+	direct_C = gradient[j, i]
+	Vs, dVs = update_voltage(Vs, As, bs, cs, ks, direct_C, time_step)
 	theta_direct += gamma*(Vs[-1] - Vs[-2])
 	pos_direct[0] += v*np.cos(theta_direct)
 	pos_direct[1] += v*np.sin(theta_direct)
