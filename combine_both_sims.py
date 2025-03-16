@@ -16,7 +16,7 @@ gamma = 0.1 #this essentially determines the strength of the turning speed
 all_vs = np.zeros((num_neurons, sim_steps))
 load = True
 save = False
-pick_idx = 4443
+pick_idx = 76
 
 def init_syns(num_neurons, chemo_sens_idxs = [0], means = [1, 1, 1], stds = [1, 1, 1]):
 	temp_As = np.random.normal(means[0], stds[0], (num_neurons, num_neurons)) #matrix weight
@@ -57,8 +57,9 @@ if load:
 		ks = np.load('all_ks_'+str(pick_idx)+'.npy')
 
 else:
-	to_pass_means = np.asarray([0.2,  0.1,  0.5])
-	As, bs, cs, ks = init_syns(num_neurons, means = to_pass_means, stds = np.ones(3)*0.1)
+	to_pass_means = np.asarray([0.5,  0.0,  0.1])
+	to_pass_stds = [0.1, 0, 0.1]
+	As, bs, cs, ks = init_syns(num_neurons, means = to_pass_means, stds = to_pass_stds)
 
 A_inv = np.linalg.inv(As)
 omega = 0
@@ -122,7 +123,7 @@ plt.imshow(gradient, extent = [-half_length, half_length, -half_length, half_len
 print(ks)
 
 for s in range(sim_steps):
-	if s%25 == 0:
+	if s%10 == 0:
 		t = s/sim_steps
 		plt.scatter(pos_abstract[0], pos_abstract[1], color = (1 - t) * color1 + t * color2)
 		plt.scatter(pos_direct[0], pos_direct[1], color = (1 - t) * color3 + t * color4)

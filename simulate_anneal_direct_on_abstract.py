@@ -7,13 +7,13 @@ labda = 1.61 #cm
 start_rad = 3 #cm
 half_length = 5 #how far are the walls from the center? consult this variable for that information in cm
 time_step = 0.1 #time step in seconds
-sim_length = 5*60
+sim_length = 60
 sim_steps = int(sim_length/time_step)
 num_neurons = 6
 max_temp = 350
-temp_0 = 50
+temp_0 = 150
 temp = temp_0
-anneal_steps = 100000
+anneal_steps = 500000
 gamma = 0.1 #this essentially determines the strength of the turning speed
 v = 1/50 #this is the starting speed in cm/sec
 
@@ -54,15 +54,28 @@ def accept(old_score, new_score, temp):
 	prob = np.exp(-max_temp*(new_score - old_score)/(3*temp))
 	return prob > np.random.rand()
 
+def i_maka_da_gradient(dim = 101):
+	xs = np.linspace(-half_length, half_length, dim)
+	ys = np.linspace(-half_length, half_length, dim)
+	temp_grad = np.zeros((dim, dim))
+	for i in range(dim):
+		for j in range(dim):
+			temp_grad[j, i] = C0*np.exp(-(xs[i]**2 + ys[j]**2)/(2*labda**2))
+	return temp_grad, xs, ys
 
-to_pass_means = np.asarray([0.2,  0.1,  0.5])
-to_pass_stds = np.ones(3)*0.01
-As, bs, cs, ks = init_syns(num_neurons, means = to_pass_means, stds = np.ones(3)*0.1)
+def update_voltage(Vs, As, bs, cs, ks, C, dt):
+	dV = np.matmul(As, Vs) + bs + cs*ks*C
+	Vs += dV*dt
+	return Vs, dV
+
+to_pass_means = np.asarray([0.5,  0.0,  0.1])
+to_pass_stds = [0.1, 0, 0.1]
+As, bs, cs, ks = init_syns(num_neurons, means = to_pass_means, stds = to_pass_stds)
 
 gradient, xs, ys = i_maka_da_gradient()
 
-min_error = 3000
-last_error = 3000
+min_error = 30000
+last_error = 30000
 
 #these are goal parameters
 g_omega = 0
@@ -70,6 +83,8 @@ g_z0 = -0.5621
 g_z1 = 37.25
 g_z2 = -88.27
 goal = np.asarray([g_omega, g_z0, g_z1, g_z2])
+
+gradient, xs, ys = i_maka_da_gradient()
 
 for epoch in range(anneal_steps):
 	temp = temp_0*(anneal_steps - epoch)/anneal_steps
@@ -79,11 +94,11 @@ for epoch in range(anneal_steps):
 	test_bs = bs
 	test_ks = ks
 
-	if epoch%3 == 0:
+	if epoch%2 == 0:
 		test_As = As + noise_As
-	if epoch%3 == 1:
-		test_bs = bs + noise_bs
-	if epoch%3 == 2:
+	#if epoch%2 == 1:
+	#	test_bs = bs + noise_bs
+	if epoch%2 == 1:
 		test_ks = ks + noise_ks
 
 	A_inv = np.linalg.inv(test_As)
@@ -105,7 +120,14 @@ for epoch in range(anneal_steps):
 		for j in range(num_neurons):
 			Vs[i] -= bs[j]*A_inv[i, j]
 
-	error = np.mean(np.square(goal - real)) + np.mean(np.abs(Vs))
+	
+	for s in range(sim_steps):
+		i = np.argmin(np.abs(3 - xs))
+		j = np.argmin(np.abs(0 - ys))
+		direct_C = gradient[j, i]
+		Vs, dVs = update_voltage(Vs, test_As, test_bs, cs, test_ks, direct_C, time_step)
+	
+	error = np.mean(np.square(goal - real)) + np.mean(np.abs(Vs))/100# + np.abs(ks[0])
 	#error = 1 - np.dot(goal, real)/(np.linalg.norm(goal)*np.linalg.norm(real)) + np.mean(np.abs(Vs))
 	#error = np.abs(goal[2] - real[2])
 	if accept(error, last_error, temp):
@@ -119,7 +141,7 @@ for epoch in range(anneal_steps):
 		np.save('all_bs_'+str(epoch), test_bs)
 		np.save('all_cs_'+str(epoch), cs)
 		np.save('all_ks_'+str(epoch), test_ks)
-	if epoch%25 == 0 or min_error == last_error:
+	if epoch%50 == 0 or min_error == last_error:
 		print(epoch, min_error, real, goal)
  
 
