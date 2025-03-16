@@ -46,6 +46,9 @@ bs = np.load('bs.npy')
 cs = np.load('cs.npy')
 ks = np.load('ks.npy')
 
+to_pass_means = np.asarray([0.2,  0.1,  0.5])
+As, bs, cs, ks = init_syns(num_neurons, means = to_pass_means, stds = np.ones(3)*0.1)
+
 A_inv = np.linalg.inv(As)
 omega = 0
 #equation 18
@@ -95,9 +98,6 @@ pos_abstract = np.asarray([start_rad*np.sin(start_phi), start_rad*np.cos(start_p
 theta_abstract = theta
 pos_direct = np.asarray([start_rad*np.sin(start_phi), start_rad*np.cos(start_phi)])
 theta_direct = theta
-
-to_pass_means = np.asarray([0.2,  0.1,  0.5])
-As, bs, cs, ks = init_syns(num_neurons, means = to_pass_means, stds = np.ones(3)*0.1)
 
 for i in range(num_neurons):
 	for j in range(num_neurons):
