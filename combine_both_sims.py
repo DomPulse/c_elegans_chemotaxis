@@ -15,6 +15,8 @@ v = 1/50 #this is the starting speed in cm/sec
 gamma = 0.1 #this essentially determines the strength of the turning speed
 all_vs = np.zeros((num_neurons, sim_steps))
 load = True
+save = False
+pick_idx = 17550
 
 def init_syns(num_neurons, chemo_sens_idxs = [0], means = [1, 1, 1], stds = [1, 1, 1]):
 	temp_As = np.random.normal(means[0], stds[0], (num_neurons, num_neurons)) #matrix weight
@@ -29,7 +31,7 @@ def init_syns(num_neurons, chemo_sens_idxs = [0], means = [1, 1, 1], stds = [1, 
 	return temp_As, temp_bs, temp_cs, temp_ks
 
 def update_voltage(Vs, As, bs, cs, ks, C, dt):
-	dV = np.matmul(As, Vs) + bs - cs*ks*C
+	dV = np.matmul(As, Vs) + bs + cs*ks*C
 	Vs += dV*dt
 	return Vs, dV
 
@@ -47,6 +49,12 @@ if load:
 	bs = np.load('bs.npy')
 	cs = np.load('cs.npy')
 	ks = np.load('ks.npy')
+
+	if pick_idx != 0:
+		As = np.load('all_As_'+str(pick_idx)+'.npy')
+		bs = np.load('all_bs_'+str(pick_idx)+'.npy')
+		cs = np.load('all_cs_'+str(pick_idx)+'.npy')
+		ks = np.load('all_ks_'+str(pick_idx)+'.npy')
 
 else:
 	to_pass_means = np.asarray([0.2,  0.1,  0.5])
@@ -138,10 +146,11 @@ for s in range(sim_steps):
 	last_C = C
 	last_C1 = C1
 
-np.save('As', As)
-np.save('bs', bs)
-np.save('cs', cs)
-np.save('ks', ks)
+if save:
+	np.save('As', As)
+	np.save('bs', bs)
+	np.save('cs', cs)
+	np.save('ks', ks)
 
 plt.figure()
 volts = plt.imshow(all_vs, aspect = 'auto', interpolation = 'none')

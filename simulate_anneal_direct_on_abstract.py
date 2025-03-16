@@ -90,7 +90,7 @@ for epoch in range(anneal_steps):
 	omega = 0
 	#equation 18
 	for n in range(num_neurons):
-		omega += bs[n]*(A_inv[-1, n] - A_inv[-2, n])
+		omega += test_bs[n]*(A_inv[-1, n] - A_inv[-2, n])
 	omega *= -gamma
 
 	e_vals, e_vecs = np.linalg.eig(test_As)
@@ -98,14 +98,16 @@ for epoch in range(anneal_steps):
 
 	real = [omega]
 	for n in range(3):
-		real.append(calc_z_n(ks, cs, T, e_vals, n))
+		real.append(calc_z_n(test_ks, cs, T, e_vals, n))
 
 	Vs = np.zeros(num_neurons)
 	for i in range(num_neurons):
 		for j in range(num_neurons):
-			Vs[i] -= bs[j]*np.linalg.inv(As)[i, j]
+			Vs[i] -= bs[j]*A_inv[i, j]
 
-	error = (np.square(goal - real)).mean() + np.mean(np.abs(Vs))
+	error = np.mean(np.square(goal - real)) + np.mean(np.abs(Vs))
+	#error = 1 - np.dot(goal, real)/(np.linalg.norm(goal)*np.linalg.norm(real)) + np.mean(np.abs(Vs))
+	#error = np.abs(goal[2] - real[2])
 	if accept(error, last_error, temp):
 		As = test_As
 		bs = test_bs
@@ -113,11 +115,11 @@ for epoch in range(anneal_steps):
 	last_error = error
 	if last_error < min_error:
 		min_error = last_error
-		np.save('all_As_'+str(epoch), As)
-		np.save('all_bs_'+str(epoch), bs)
+		np.save('all_As_'+str(epoch), test_As)
+		np.save('all_bs_'+str(epoch), test_bs)
 		np.save('all_cs_'+str(epoch), cs)
-		np.save('all_ks_'+str(epoch), ks)
-	if epoch%25 == 0:
-		print(epoch, last_error, min_error, real)
+		np.save('all_ks_'+str(epoch), test_ks)
+	if epoch%25 == 0 or min_error == last_error:
+		print(epoch, min_error, real, goal)
  
 
