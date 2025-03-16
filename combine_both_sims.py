@@ -14,6 +14,7 @@ Vs = np.zeros(num_neurons)
 v = 1/50 #this is the starting speed in cm/sec
 gamma = 0.1 #this essentially determines the strength of the turning speed
 all_vs = np.zeros((num_neurons, sim_steps))
+load = True
 
 def init_syns(num_neurons, chemo_sens_idxs = [0], means = [1, 1, 1], stds = [1, 1, 1]):
 	temp_As = np.random.normal(means[0], stds[0], (num_neurons, num_neurons)) #matrix weight
@@ -28,7 +29,7 @@ def init_syns(num_neurons, chemo_sens_idxs = [0], means = [1, 1, 1], stds = [1, 
 	return temp_As, temp_bs, temp_cs, temp_ks
 
 def update_voltage(Vs, As, bs, cs, ks, C, dt):
-	dV = np.matmul(As, Vs) + bs + cs*ks*C
+	dV = np.matmul(As, Vs) + bs - cs*ks*C
 	Vs += dV*dt
 	return Vs, dV
 
@@ -41,13 +42,15 @@ def i_maka_da_gradient(dim = 101):
 			temp_grad[j, i] = C0*np.exp(-(xs[i]**2 + ys[j]**2)/(2*labda**2))
 	return temp_grad, xs, ys
 
-As = np.load('As.npy')
-bs = np.load('bs.npy')
-cs = np.load('cs.npy')
-ks = np.load('ks.npy')
+if load:
+	As = np.load('As.npy')
+	bs = np.load('bs.npy')
+	cs = np.load('cs.npy')
+	ks = np.load('ks.npy')
 
-to_pass_means = np.asarray([0.2,  0.1,  0.5])
-As, bs, cs, ks = init_syns(num_neurons, means = to_pass_means, stds = np.ones(3)*0.1)
+else:
+	to_pass_means = np.asarray([0.2,  0.1,  0.5])
+	As, bs, cs, ks = init_syns(num_neurons, means = to_pass_means, stds = np.ones(3)*0.1)
 
 A_inv = np.linalg.inv(As)
 omega = 0
