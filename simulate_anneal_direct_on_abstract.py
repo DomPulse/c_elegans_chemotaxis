@@ -7,7 +7,7 @@ labda = 1.61 #cm
 start_rad = 3 #cm
 half_length = 5 #how far are the walls from the center? consult this variable for that information in cm
 time_step = 0.1 #time step in seconds
-sim_length = 60
+sim_length = 5*60
 sim_steps = int(sim_length/time_step)
 num_neurons = 6
 max_temp = 350
@@ -83,6 +83,7 @@ g_z0 = -0.5621
 g_z1 = 37.25
 g_z2 = -88.27
 goal = np.asarray([g_omega, g_z0, g_z1, g_z2])
+norm_goal = np.asarray([0, 1, 1, 1])
 
 gradient, xs, ys = i_maka_da_gradient()
 
@@ -94,11 +95,12 @@ for epoch in range(anneal_steps):
 	test_bs = bs
 	test_ks = ks
 
-	if epoch%2 == 0:
+	if epoch%3 == 0:
 		test_As = As + noise_As
-	#if epoch%2 == 1:
-	#	test_bs = bs + noise_bs
-	if epoch%2 == 1:
+	if epoch%3 == 2:
+		gamma += np.random.normal(0, 0.1)
+		gamma = np.clip(gamma, 0.05, 1)
+	if epoch%3 == 1:
 		test_ks = ks + noise_ks
 
 	A_inv = np.linalg.inv(test_As)
@@ -113,7 +115,7 @@ for epoch in range(anneal_steps):
 
 	real = [omega]
 	for n in range(3):
-		real.append(calc_z_n(test_ks, cs, T, e_vals, n))
+		real.append(calc_z_n(test_ks, cs, T, e_vals, n)/(goal[n+1]))
 
 	Vs = np.zeros(num_neurons)
 	for i in range(num_neurons):
@@ -127,7 +129,7 @@ for epoch in range(anneal_steps):
 		direct_C = gradient[j, i]
 		Vs, dVs = update_voltage(Vs, test_As, test_bs, cs, test_ks, direct_C, time_step)
 	
-	error = np.mean(np.square(goal - real)) + 100*(np.mean(np.abs(Vs)) > 100)# + np.abs(ks[0])
+	error = np.mean(np.square(norm_goal - real)) + 100*(np.mean(np.abs(Vs)) > 100) + 100*(np.mean(np.abs(Vs)) < 5)# + (np.abs(ks[0]) > 1)*100
 	#error = 1 - np.dot(goal, real)/(np.linalg.norm(goal)*np.linalg.norm(real)) + np.mean(np.abs(Vs))
 	#error = np.abs(goal[2] - real[2])
 	if accept(error, last_error, temp):
@@ -142,6 +144,6 @@ for epoch in range(anneal_steps):
 		np.save('all_cs_'+str(epoch), cs)
 		np.save('all_ks_'+str(epoch), test_ks)
 	if epoch%50 == 0 or min_error == last_error:
-		print(epoch, min_error, real, goal)
+		print(epoch, min_error, real, gamma)
  
 
