@@ -115,7 +115,7 @@ for epoch in range(anneal_steps):
 
 	real = [omega]
 	for n in range(3):
-		real.append(calc_z_n(test_ks, cs, T, e_vals, n)/(goal[n+1]))
+		real.append(calc_z_n(test_ks, cs, T, e_vals, n))
 
 	Vs = np.zeros(num_neurons)
 	for i in range(num_neurons):
@@ -129,7 +129,7 @@ for epoch in range(anneal_steps):
 		direct_C = gradient[j, i]
 		Vs, dVs = update_voltage(Vs, test_As, test_bs, cs, test_ks, direct_C, time_step)
 	
-	error = np.mean(np.square(norm_goal - real)) + 100*(np.mean(np.abs(Vs)) > 100) + 100*(np.mean(np.abs(Vs)) < 5)# + (np.abs(ks[0]) > 1)*100
+	error = np.mean(np.square(goal - real)) + 100*(np.mean(np.abs(Vs)) > 100) + 100*(np.mean(np.abs(Vs)) < 5)# + (np.abs(ks[0]) > 1)*100
 	#error = 1 - np.dot(goal, real)/(np.linalg.norm(goal)*np.linalg.norm(real)) + np.mean(np.abs(Vs))
 	#error = np.abs(goal[2] - real[2])
 	if accept(error, last_error, temp):
